@@ -98,10 +98,6 @@ func restore() {
 
 func runRestore(mapName string) {
 
-	fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>>>")
-	fmt.Println(viper.GetString("SERVER_USERNAME"))
-	fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>>>")
-
 	cmd := exec.Command("arangorestore",
 		"--input-directory", mapName,
 		"--server.endpoint", viper.GetString("SERVER_ENDPOINT"),
