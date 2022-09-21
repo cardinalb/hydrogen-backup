@@ -51,14 +51,18 @@ import (
 	"github.com/spf13/viper"
 )
 
+// This defines the directories in which backups will be created.
+// Its used later on to work out which directories are backups or not.
 const DIRECTORY_SIGNATURE = "hydrogenbackup"
 
 func main() {
+	// Config passed in YAML config.env file
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
 	viper.ReadInConfig()
 
+	// Make sure we are either backing up or restoring otherwise flake out.
 	if os.Args[1] == "backup" || os.Args[1] == "restore" {
 		if os.Args[1] == "backup" {
 			backup()
@@ -74,7 +78,15 @@ func main() {
 }
 
 func backup() {
+	// Get a timestamp (Unix seconds) to append to the backup directory name so
+	// we have one directory per backup. We can pick apart the Unix seconds later
+	// to get back to a timestamp when the backup was created if required.
+
 	hbd := fmt.Sprintf(DIRECTORY_SIGNATURE+"_%d", getTimestamp())
+
+	// Run arangodump. Now this foxed me for a bit byou you need to include the
+	// --include-system-collections true if you want to backup the actual graphs and
+	// not just the collections.
 
 	cmd := exec.Command("arangodump",
 		"--output-directory", hbd,
@@ -92,12 +104,14 @@ func backup() {
 	}
 }
 
+// TODO: Tidy this up as we dont really need this function
 func restore() {
 	listBackupDirectories()
 }
 
-func runRestore(mapName string) {
+// Runs the restore of data from backup directories.
 
+func runRestore(mapName string) {
 	cmd := exec.Command("arangorestore",
 		"--input-directory", mapName,
 		"--server.endpoint", viper.GetString("SERVER_ENDPOINT"),
@@ -114,6 +128,11 @@ func runRestore(mapName string) {
 		log.Fatalf("cmd.Run() failed with %s\n", err)
 	}
 }
+
+// Looks in the directory where the main application is running and pulls
+// back any directories that match the DIRECTORY_SIGNATURE patter.
+// Prompts user to enter the number of the backup they want to restore
+// then runs arangorestore.
 
 func listBackupDirectories() {
 	filesMap := make(map[int]string)
@@ -165,6 +184,7 @@ func listBackupDirectories() {
 	}
 }
 
+// TODO : create another function that allows us to get the timestamp back from the backup directory name
 func getTimestamp() int64 {
 	now := time.Now()
 	sec := now.Unix()
